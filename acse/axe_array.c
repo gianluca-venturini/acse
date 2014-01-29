@@ -107,3 +107,95 @@ int loadArrayAddress(t_program_infos *program
     * the value of the array slot */
    return mova_register;
 }
+
+void shift_array(t_program_infos *program
+            , char *ID, t_axe_expression shift, int direction)
+{
+        t_axe_variable* id = getVariable(program, ID);
+        
+        if( ! id->isArray) {
+           printMessage("Trying to shift a non-array variable");
+	   exit(-1);
+	}
+
+	//initializing
+	int sha_reg = getNewRegister(program);
+	t_axe_expression zero_exp = create_expression(0, IMMEDIATE);
+	int size_reg = gen_load_immediate(program, id->arraySize);
+
+	if(shift.expression_type == IMMEDIATE)
+	   gen_addi_instruction(program, sha_reg, REG_0, shift.value);
+	else
+	   gen_add_instruction(program, sha_reg, REG_0, shift.value, CG_DIRECT_ALL);
+
+	//shifting...
+	int temp_reg;
+	int tr = getNewRegister(program);
+	int src_index = getNewRegister(program);
+	int dest_index = getNewRegister(program);
+	t_axe_expression src_exp, dest_exp;
+	src_exp = create_expression(src_index, REGISTER);
+	dest_exp = create_expression(dest_index, REGISTER); 
+        if(direction==LEFT)
+        {
+		gen_add_instruction(program, src_index, REG_0, sha_reg, CG_DIRECT_ALL);
+		gen_add_instruction(program, dest_index, REG_0, REG_0, CG_DIRECT_ALL);
+        }
+        else
+        {
+		gen_subi_instruction(program, dest_index, size_reg, 1);
+		gen_sub_instruction(program, src_index, dest_index, sha_reg, CG_DIRECT_ALL);
+        }
+	t_axe_label * stop_shifting = newLabel(program);
+	t_axe_label * continue_shifting = assignNewLabel(program);
+	  
+	//check if the right(for <<)/left(for >>) bound of the array has been reached...
+        if(direction==LEFT)
+        {
+		gen_sub_instruction(program, tr, size_reg, src_index, CG_DIRECT_ALL);
+		gen_beq_instruction(program, stop_shifting, 0);
+        }
+	else
+        {
+		gen_andb_instruction(program, src_index, src_index, src_index, CG_DIRECT_ALL);
+		gen_blt_instruction(program, stop_shifting, 0);
+	}
+	
+	temp_reg = loadArrayElement(program, ID, src_exp);
+	t_axe_expression temp_exp = create_expression(temp_reg, REGISTER);
+	storeArrayElement(program, ID, dest_exp, temp_exp);
+
+        if(direction==LEFT)
+	{
+		gen_addi_instruction(program, src_index, src_index, 1);
+		gen_addi_instruction(program, dest_index, dest_index, 1);
+	}
+	else
+	{
+		gen_subi_instruction(program, src_index, src_index, 1);
+		gen_subi_instruction(program, dest_index, dest_index, 1);
+	}
+	gen_bt_instruction(program, continue_shifting, 0);
+	assignLabel(program, stop_shifting);
+
+	//filling empty positions with zeros starting from dest_index...
+	t_axe_label * stop_filling = newLabel(program);
+	t_axe_label * continue_filling = assignNewLabel(program);
+	if(direction==LEFT)
+	{
+		gen_sub_instruction(program, tr, size_reg, dest_index, CG_DIRECT_ALL);
+		gen_beq_instruction(program, stop_filling, 0);
+		storeArrayElement(program, ID, dest_exp, zero_exp);
+		gen_addi_instruction(program, dest_index, dest_index, 1);
+	}
+	else
+	{
+		gen_andb_instruction(program, dest_index, dest_index, dest_index, CG_DIRECT_ALL);
+		gen_blt_instruction(program, stop_filling, 0);
+		storeArrayElement(program, ID, dest_exp, zero_exp);
+		gen_subi_instruction(program, dest_index, dest_index, 1);
+	}
+	
+	gen_bt_instruction(program, continue_filling, 0);
+	assignLabel(program, stop_filling);
+}
