@@ -114,6 +114,13 @@ typedef struct t_while_statement
                                     * that follows the while construct */
 } t_while_statement;
 
+typedef struct t_try_catch_statement
+{
+  t_axe_label *label_catcher; /* this label points to the catch block */
+  t_axe_label *label_end;     /* this label points to the instruction following
+                               * the catcher */
+} t_try_catch_statement;
+
 /* create a label */
 extern t_axe_label * alloc_label(int value);
 
@@ -122,6 +129,9 @@ extern t_axe_expression create_expression (int value, int type);
 
 /* create an instance that will mantain infos about a while statement */
 extern t_while_statement create_while_statement();
+
+/* create an instance that will maintain info about a try-catch statement */
+extern t_try_catch_statement create_try_catch_statement();
 
 /* create an instance of `t_axe_register' */
 extern t_axe_register * alloc_register(int ID, int indirect);

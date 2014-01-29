@@ -90,6 +90,9 @@ ID       [a-zA-Z_][a-zA-Z0-9_]*
 ","               { return COMMA; }
 
 "do"              { return DO; }
+"try"             { return TRY; }
+"catch"           { return CATCH; }
+"throw"           { return THROW; }
 "else"            { return ELSE; }
 "for"             { return FOR; }
 "if"              { return IF; }

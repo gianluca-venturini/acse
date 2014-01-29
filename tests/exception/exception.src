@@ -1,0 +1,7 @@
+
+try {
+  throw;
+  write(0);
+} catch {
+  write(1);
+}

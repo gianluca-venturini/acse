@@ -89,8 +89,6 @@ t_reg_allocator *RA;       /* Register allocator. It implements the "Linear scan
 
 t_io_infos *file_infos;    /* input and output files used by the compiler */
 
-t_list *try_stack = NULL;  /* stack of try-catch statement */
-
 %}
 
 %expect 1
@@ -107,7 +105,6 @@ t_list *try_stack = NULL;  /* stack of try-catch statement */
    t_list *list;
    t_axe_label *label;
    t_while_statement while_stmt;
-   t_try_catch_statement try_catch_stmt;
 } 
 /*=========================================================================
                                TOKENS 
@@ -124,10 +121,6 @@ t_list *try_stack = NULL;  /* stack of try-catch statement */
 %token RETURN
 %token READ
 %token WRITE
-
-%token <try_catch_stmt> TRY
-%token CATCH
-%token THROW
 
 %token <label> DO
 %token <while_stmt> WHILE
@@ -256,8 +249,6 @@ statement   : assign_statement SEMI      { /* does nothing */ }
 control_statement : if_statement         { /* does nothing */ }
             | while_statement            { /* does nothing */ }
             | do_while_statement SEMI    { /* does nothing */ }
-            | try_catch_statement        { /* does nothing */ }
-            | throw_statement SEMI       { /* does nothing */ }
             | return_statement SEMI      { /* does nothing */ }
 ;
 
@@ -414,46 +405,6 @@ do_while_statement  : DO
                            /* if `exp' returns TRUE, jump to the label $1 */
                            gen_bne_instruction (program, $1, 0);
                      }
-;
-
-try_catch_statement : TRY
-                      {
-                           /* create a new try-catch statement */
-                           $1 = create_try_catch_statement();
-                           $1.label_catcher = newLabel(program);
-                           $1.label_end = newLabel(program);
-
-                           /* push it, for throw translation */
-                           try_stack = addFirst(try_stack, &$1);
-                      }
-                      code_block
-                      {
-                           /* end of try block, need to jump the catcher */
-                           gen_bt_instruction(program, $1.label_end, 0);
-
-                           /* pop try-catch pointer */
-                           removeFirst(try_stack);
-
-                           /* here starts the catch block */
-                           assignLabel(program, $1.label_catcher);
-                      }
-                      CATCH code_block
-                      {
-                           /* fix end label */
-                           assignLabel(program, $1.label_end);
-                      }
-;
-
-throw_statement : THROW
-                  {
-                       /* stack empty, throw not inside a try block */
-                       if(!getLength(try_stack))
-                         notifyError(AXE_SYNTAX_ERROR);
-
-                       /* jump to catcher */
-                       t_try_catch_statement *stmt = try_stack->data;
-                       gen_bt_instruction(program, stmt->label_catcher, 0);
-                  }
 ;
 
 return_statement : RETURN

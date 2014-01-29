@@ -100,6 +100,15 @@ t_while_statement create_while_statement()
    return statement;
 }
 
+t_try_catch_statement create_try_catch_statement() {
+  t_try_catch_statement statement;
+
+  statement.label_catcher = NULL;
+  statement.label_end = NULL;
+
+  return statement;
+}
+
 t_axe_label * alloc_label(int value)
 {
    t_axe_label *result;
