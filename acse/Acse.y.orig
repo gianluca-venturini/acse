@@ -89,12 +89,6 @@ t_reg_allocator *RA;       /* Register allocator. It implements the "Linear scan
 
 t_io_infos *file_infos;    /* input and output files used by the compiler */
 
-struct {
-  t_axe_label *body_label;
-  t_axe_label *cond_label;
-  int index_reg;
-} array_compr;
-
 %}
 
 %expect 1
@@ -127,7 +121,6 @@ struct {
 %token RETURN
 %token READ
 %token WRITE
-%token IN
 
 %token <label> DO
 %token <while_stmt> WHILE
@@ -309,58 +302,6 @@ assign_statement : IDENTIFIER LSQUARE exp RSQUARE ASSIGN exp
 
                /* free the memory associated with the IDENTIFIER */
                free($1);
-            }
-            | IDENTIFIER ASSIGN 
-            {
-              array_compr.cond_label = newLabel(program);
-              array_compr.index_reg = gen_load_immediate(program, 0);
-              gen_bt_instruction(program, array_compr.cond_label, 0);
-              array_compr.body_label = assignNewLabel(program);
-            }
-              LSQUARE exp 
-            {
-              int index_reg = array_compr.index_reg;
-              t_axe_expression index_expr =
-                create_expression(index_reg, REGISTER);
-              storeArrayElement(program, $1, index_expr, $5);
-              gen_addi_instruction(program, index_reg, index_reg, 1);
-            }
-              FOR IDENTIFIER IN IDENTIFIER RSQUARE
-            {
-              t_axe_variable *dest = getVariable(program, $1);
-              t_axe_variable *iv = getVariable(program, $8);
-              t_axe_variable *src = getVariable(program, $10);
-
-              if (!dest->isArray || iv->isArray || !src->isArray)
-                exit(-1);
-
-              t_axe_expression min_size = 
-                create_expression(dest->arraySize < src->arraySize ? 
-                                    dest->arraySize : src->arraySize,
-                                  IMMEDIATE);
-              
-
-              int iv_reg = get_symbol_location(program, $8, 0);
-              int index_reg = array_compr.index_reg;
-              t_axe_expression index_expr =
-                create_expression(index_reg, REGISTER);
-              t_axe_label *end_label = newLabel(program);
-
-              assignLabel(program, array_compr.cond_label);
-
-              t_axe_expression cmp = 
-                handle_binary_comparison(program, index_expr, min_size, _LT_);
-
-              gen_beq_instruction(program, end_label, 0);
-              
-              int elem = loadArrayElement(program, $10, index_expr);
-              gen_addi_instruction(program, iv_reg, elem, 0);
-
-              gen_bt_instruction(program, array_compr.body_label, 0);
-              assignLabel(program, end_label);
-              free($1);
-              free($8);
-              free($10);
             }
 ;
             
