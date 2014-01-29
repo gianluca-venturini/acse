@@ -1,0 +1,8 @@
+
+int a, b;
+
+a = 10;
+b = 30;
+
+write(a in 10:20);
+write(a in 20:b);
