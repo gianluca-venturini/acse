@@ -122,12 +122,6 @@ t_io_infos *file_infos;    /* input and output files used by the compiler */
 %token READ
 %token WRITE
 
-%token <label> ON
-%token ZERO_FLAG
-%token NOTZERO_FLAG
-%token NEG_FLAG
-%token POS_FLAG
-%token RUN
 %token <label> DO
 %token <while_stmt> WHILE
 %token <label> IF
@@ -256,7 +250,6 @@ control_statement : if_statement         { /* does nothing */ }
             | while_statement            { /* does nothing */ }
             | do_while_statement SEMI    { /* does nothing */ }
             | return_statement SEMI      { /* does nothing */ }
-	    | onflag_statement 	 	 { /* does nothing */ }
 ;
 
 read_write_statement : read_statement  { /* does nothing */ }
@@ -312,47 +305,6 @@ assign_statement : IDENTIFIER LSQUARE exp RSQUARE ASSIGN exp
             }
 ;
             
-onflag_statement : ON ZERO_FLAG RUN 
-		  {
-		    $1=newLabel(program);
-		    gen_bne_instruction(program,$1,0);
-		  } 
-		  code_block 
-		  {
-		    assignLabel(program,$1);
-		  }
-
-		| ON NOTZERO_FLAG RUN 
-		  {
-		    $1=newLabel(program);
-		    gen_beq_instruction(program,$1,0);
-		  } 
-		  code_block 
-		  { 
-		    assignLabel(program,$1);
-		  }
-		
-		| ON POS_FLAG RUN 
-		  {		    
-		    $1=newLabel(program);
-		    gen_bmi_instruction(program,$1,0);
-		  } 
-		  code_block 
-		  {
-		   assignLabel(program,$1);
-		  }
-		
-	        | ON NEG_FLAG RUN 
-		  {
-		    $1=newLabel(program);
-		    gen_bpl_instruction(program,$1,0);
-		  } 
-		  code_block 
-		  {
-		   assignLabel(program,$1);
-		  }
-;
-
 if_statement   : if_stmt
                {
                   /* fix the `label_else' */
