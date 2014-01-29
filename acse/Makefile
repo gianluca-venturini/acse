@@ -8,7 +8,7 @@ cfiles = $(filter-out $(objects), $(wildcard *.c))
 all: $(project)
 
 $(project) : $(objects) $(cfiles) $(hfiles)
-	gcc -o $@ $(objects) $(cfiles)
+	gcc -O0 -g -o $@ $(objects) $(cfiles)
 
 Acse.tab.c : Acse.y
 	bison -d $<

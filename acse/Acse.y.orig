@@ -114,7 +114,7 @@ t_io_infos *file_infos;    /* input and output files used by the compiler */
 %token LBRACE RBRACE LPAR RPAR LSQUARE RSQUARE
 %token SEMI COLON PLUS MINUS MUL_OP DIV_OP MOD_OP
 %token AND_OP OR_OP NOT_OP
-%token ASSIGN LT GT SHL_OP SHR_OP RSHL_OP RSHR_OP EQ NOTEQ LTEQ GTEQ
+%token ASSIGN LT GT SHL_OP SHR_OP EQ NOTEQ LTEQ GTEQ
 %token ANDAND OROR
 %token COMMA
 %token FOR
@@ -147,7 +147,7 @@ t_io_infos *file_infos;    /* input and output files used by the compiler */
 %left AND_OP
 %left EQ NOTEQ
 %left LT GT LTEQ GTEQ
-%left SHL_OP SHR_OP RSHL_OP RSHR_OP
+%left SHL_OP SHR_OP
 %left MINUS PLUS
 %left MUL_OP DIV_OP
 %right NOT
@@ -547,8 +547,6 @@ exp: NUMBER      { $$ = create_expression ($1, IMMEDIATE); }
    | exp SHR_OP exp  {  $$ = handle_bin_numeric_op(program, $1, $3, SHR); }
    | exp ANDAND exp  {  $$ = handle_bin_numeric_op(program, $1, $3, ANDL); }
    | exp OROR exp    {  $$ = handle_bin_numeric_op(program, $1, $3, ORL); }
-   | exp RSHL_OP exp {  $$ = handle_bin_numeric_op(program, $1, $3, RSHL); }
-   | exp RSHR_OP exp {  $$ = handle_bin_numeric_op(program, $1, $3, RSHR); }
    | LPAR exp RPAR   { $$ = $2; }
    | MINUS exp       {
                         if ($2.expression_type == IMMEDIATE)

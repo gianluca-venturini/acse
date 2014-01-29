@@ -495,5 +495,65 @@ extern t_axe_instruction * gen_bgt_instruction
 extern t_axe_instruction * gen_ble_instruction
       (t_program_infos *program, t_axe_label *label, int addr);
 
+/*----------------------------------------------------
+ *                   EMULATED INSTRUCTIONS
+ *---------------------------------------------------*/
+
+/* Used in order to create and assign to the current `program'
+ * a RSHLI instruction. An RTL representation for an RSHLI instruction
+ * of the form: RSHLI R1 R2 #IMM can be represented as follows:
+ * R1 <-- shift_left_rot(R2, IMM).
+ * `r_source1' and `immediate' are the two operands of the binary numeric
+ * operation. `r_dest' is a register location, `immediate' is an immediate
+ * value. 
+ *
+ * Since our machine does not have this kind of instruction, we emulate it. */
+extern void gen_rshli_emulation
+      (t_program_infos *program, int r_dest, int r_source1, int immediate);
+
+/* Used in order to create and assign to the current `program'
+ * a RSHRI instruction. An RTL representation for an RSHRI instruction
+ * of the form: RSHRI R1 R2 #IMM can be represented as follows:
+ * R1 <-- shift_right_rot(R2, IMM).
+ * `r_source1' and `immediate' are the two operands of the binary numeric
+ * operation. `r_dest' is a register location, `immediate' is an immediate
+ * value. 
+ *
+ * Since our machine does not have this kind of instruction, we emulate it. */
+extern void gen_rshri_emulation
+      (t_program_infos *program, int r_dest, int r_source1, int immediate);
+
+/* Used in order to create and assign to the current `program'
+ * a RSHL instruction. An RTL representation for an RSHL instruction
+ * of the form: RSHL R1 R2 R3 can be represented
+ * as follows: R1 <-- R2 shifted to left by R3 with rotation.
+ * `r_source1' and `r_source2' are the two operands of the binary numeric
+ * operation. `r_dest' is a register location. `r_dest' and `r_source2'
+ * are register locations that can be directly or indirectly addressed.
+ *
+ * Since our machine does not have this kind of instruction, we emulate it. */
+extern void gen_rshl_emulation (t_program_infos *program
+      , int r_dest, int r_source1, int r_source2, int flags);
+
+/* Used in order to create and assign to the current `program'
+ * a RSHR instruction. An RTL representation for an RSHR instruction
+ * of the form: RSHR R1 R2 R3 can be represented
+ * as follows: R1 <-- R2 shifted to right by R3 with rotation.
+ * `r_source1' and `r_source2' are the two operands of the binary numeric
+ * operation. `r_dest' is a register location. `r_dest' and `r_source2'
+ * are register locations that can be directly or indirectly addressed.
+ *
+ * Since our machine does not have this kind of instruction, we emulate it. */
+extern void gen_rshr_emulation (t_program_infos *program
+      , int r_dest, int r_source1, int r_source2, int flags);
+
+/* Generates the code for a generic shift-rotate emulation with immediate
+ * parameters. */
+extern void gen_rshi_emulation (t_program_infos *program
+      , int r_dest, int r_source1, int immediate, int shift_op);
+
+/* Generates the code for a generic shift-rotate emulation. */
+extern void gen_rsh_emulation (t_program_infos *program
+      , int r_dest, int r_source1, int r_source2, int flags, int shift_op);
 
 #endif

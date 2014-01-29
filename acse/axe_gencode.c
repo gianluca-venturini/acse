@@ -674,3 +674,116 @@ t_axe_instruction * gen_jump_instruction (t_program_infos *program
    /* return the load instruction */
    return instr;
 }
+
+void gen_rshli_emulation
+      (t_program_infos *program, int r_dest, int r_source1, int immediate)
+{
+   gen_rshi_emulation(program, r_dest, r_source1, immediate, RSHL);
+}
+
+void gen_rshri_emulation
+      (t_program_infos *program, int r_dest, int r_source1, int immediate)
+{
+   gen_rshi_emulation(program, r_dest, r_source1, immediate, RSHR);
+}
+
+void gen_rshl_emulation (t_program_infos *program
+      , int r_dest, int r_source1, int r_source2, int flags)
+{
+   gen_rsh_emulation(program, r_dest, r_source1, r_source2, flags, RSHL);
+}
+
+void gen_rshr_emulation (t_program_infos *program
+      , int r_dest, int r_source1, int r_source2, int flags)
+{
+   gen_rsh_emulation(program, r_dest, r_source1, r_source2, flags, RSHR);
+}
+
+void gen_rshi_emulation (t_program_infos *program
+      , int r_dest, int r_source1, int immediate, int shift_op)
+{
+   int r_tmp1, r_tmp2;
+
+   /* The shift amount is constant, fold at compile-time. */
+   int discarded_shift = sizeof(int) * 8 - immediate;
+
+   /* Move discarded bits into the right place. */
+   r_tmp1 = getNewRegister(program);
+   switch(shift_op)
+   {
+      case RSHL:
+        gen_shri_instruction(program, r_tmp1, r_source1, discarded_shift);
+        break;
+      case RSHR:
+        gen_shli_instruction(program, r_tmp1, r_source1, discarded_shift);
+        break;
+      default:
+         notifyError(AXE_INVALID_INSTRUCTION);
+   }
+
+   /* Move not discarded bits into the right place. */
+   r_tmp2 = getNewRegister(program);
+   switch(shift_op)
+   {
+      case RSHL:
+        gen_shli_instruction(program, r_tmp2, r_source1, immediate);
+        break;
+      case RSHR:
+        gen_shri_instruction(program, r_tmp2, r_source1, immediate);
+        break;
+      default:
+         notifyError(AXE_INVALID_INSTRUCTION);
+   }
+
+   /* Combine the two values. */
+   gen_orb_instruction(program, r_dest, r_tmp1, r_tmp2, CG_DIRECT_ALL);
+}
+
+void gen_rsh_emulation (t_program_infos *program
+      , int r_dest, int r_source1, int r_source2, int flags, int shift_op)
+{
+   /* We support only direct addressing, for now. */
+   if(flags != CG_DIRECT_ALL)
+      notifyError(AXE_INVALID_INSTRUCTION);
+
+   int r_tmp1, r_tmp2, r_tmp3, r_tmp4;
+
+   /* The shift amount must be computed at run-time. */
+   r_tmp3 = getNewRegister(program);
+   r_tmp4 = getNewRegister(program);
+   gen_addi_instruction(program, r_tmp3, REG_0, sizeof(int) * 8);
+   gen_sub_instruction(program, r_tmp4, r_tmp3, r_source2, CG_DIRECT_ALL);
+
+   /* Move discarded bits into the right place. */
+   r_tmp1 = getNewRegister(program);
+   switch(shift_op)
+   {
+      case RSHL:
+        gen_shr_instruction(program, r_tmp1, r_source1, r_tmp4, CG_DIRECT_ALL);
+        break;
+      case RSHR:
+        gen_shl_instruction(program, r_tmp1, r_source1, r_tmp4, CG_DIRECT_ALL);
+        break;
+      default:
+         notifyError(AXE_INVALID_INSTRUCTION);
+   }
+
+   /* Move not discarded bits into the right place. */
+   r_tmp2 = getNewRegister(program);
+   switch(shift_op)
+   {
+      case RSHL:
+        gen_shl_instruction(program,
+                            r_tmp2, r_source1, r_source2, CG_DIRECT_ALL);
+        break;
+      case RSHR:
+        gen_shr_instruction(program,
+                            r_tmp2, r_source1, r_source2, CG_DIRECT_ALL);
+        break;
+      default:
+         notifyError(AXE_INVALID_INSTRUCTION);
+   }
+
+   /* Combine the two values. */
+   gen_orb_instruction(program, r_dest, r_tmp1, r_tmp2, CG_DIRECT_ALL);
+}

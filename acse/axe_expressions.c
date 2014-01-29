@@ -59,6 +59,10 @@ t_axe_expression handle_bin_numeric_op (t_program_infos *program
                              , exp1.value, exp2.value); break;
          case SHR : gen_shri_instruction (program, output_register
                              , exp1.value, exp2.value); break;
+         case RSHL : gen_rshli_emulation (program, output_register
+                              , exp1.value, exp2.value); break;
+         case RSHR : gen_rshri_emulation (program, output_register
+                              , exp1.value, exp2.value); break;
          case DIV :
                if (exp2.value == 0){
                   printWarningMessage(WARN_DIVISION_BY_ZERO);
@@ -132,6 +136,32 @@ t_axe_expression handle_bin_numeric_op (t_program_infos *program
                   gen_shr_instruction (program, output_register
                            , other_reg, exp2.value, CG_DIRECT_ALL);
                   break;
+         case RSHL :
+                  /* we have to load into a register the immediate value */
+                  other_reg = getNewRegister(program);
+
+                  /* In order to load the immediate inside a new
+                   * register we have to insert an ADDI instr. */
+                  gen_addi_instruction (program, output_register
+                            , REG_0, exp1.value);
+
+                  /* we have to emulate a RSHL instruction */
+                  gen_rshl_emulation (program, output_register
+                            , other_reg, exp2.value, CG_DIRECT_ALL);
+                  break;
+         case RSHR :
+                  /* we have to load into a register the immediate value */
+                  other_reg = getNewRegister(program);
+
+                  /* In order to load the immediate inside a new
+                   * register we have to insert an ADDI instr. */
+                  gen_addi_instruction (program, output_register
+                            , REG_0, exp1.value);
+
+                  /* we have to emulate a RSHR instruction */
+                  gen_rshr_emulation (program, output_register
+                            , other_reg, exp2.value, CG_DIRECT_ALL);
+                  break;
          default :
                   notifyError(AXE_INVALID_EXPRESSION);
       }
@@ -165,6 +195,12 @@ t_axe_expression handle_bin_numeric_op (t_program_infos *program
          case SHR :  gen_shl_instruction (program, output_register
                               , exp1.value, exp2.value, CG_DIRECT_ALL);
                      break;
+         case RSHL :  gen_rshl_emulation (program, output_register
+                               , exp1.value, exp2.value, CG_DIRECT_ALL);
+                      break;
+         case RSHR :  gen_rshr_emulation (program, output_register
+                               , exp1.value, exp2.value, CG_DIRECT_ALL);
+                      break;
          default :
                      notifyError(AXE_INVALID_EXPRESSION);
       }
@@ -186,6 +222,14 @@ t_axe_expression handle_bin_numeric_op_Imm
       case MUL : return create_expression ((val1 * val2), IMMEDIATE);
       case SHL : return create_expression ((val1 << val2), IMMEDIATE);
       case SHR : return create_expression ((val1 >> val2), IMMEDIATE);
+      case RSHL: {
+         int res = (val1 >> (sizeof(int) * 8 - val2)) | (val1 << val2);
+         return create_expression (res, IMMEDIATE);
+      }
+      case RSHR: {
+         int res = (val1 << (sizeof(int) * 8 - val2)) | (val1 >> val2);
+         return create_expression (res, IMMEDIATE);
+      }
       case DIV :
          if (val2 == 0){
             printWarningMessage(WARN_DIVISION_BY_ZERO);

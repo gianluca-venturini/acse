@@ -80,6 +80,12 @@
 #define STORE 60
 #define AXE_READ 61
 #define AXE_WRITE 62
+
+/* Pseudo-opcode */
+#define RSHL 63
+#define RSHR 64
+
+/* Invalid opcode */
 #define INVALID_OPCODE -1
 
 /* data types */
