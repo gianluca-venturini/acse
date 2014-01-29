@@ -133,9 +133,26 @@ t_axe_declaration * alloc_declaration
    result->arraySize = arraySize;
    result->ID = ID;
    result->init_val = init_val;
+   result->isMatrix = 0;
 
    /* return the just created and initialized instance of t_axe_declaration */
    return result;
+}
+
+
+t_axe_declaration * alloc_declaration_matrix
+      (char *ID, int rows, int cols)
+{
+  t_axe_declaration *result = alloc_declaration(ID, 1, rows * cols, 0);
+
+  if (result == NULL)
+    return NULL;
+
+  result->isMatrix = 1;
+  result->colonSize = cols;
+  result->rowSize = rows;
+
+  return result;
 }
 
 /* finalize an instance of `t_axe_variable' */
@@ -165,9 +182,25 @@ t_axe_variable * alloc_variable
    result->ID = ID;
    result->init_val = init_val;
    result->labelID = NULL;
+   result->isMatrix = 0;
 
    /* return the just created and initialized instance of t_axe_variable */
    return result;
+}
+
+t_axe_variable * alloc_variable_matrix
+      (char *ID, int type, int rows, int cols)
+{
+  t_axe_variable *result = alloc_variable(ID, type, 1, rows * cols, 0);
+
+  if (result == NULL)
+    return NULL;
+
+  result->isMatrix = 1;
+  result->colonSize = cols;
+  result->rowSize = rows;
+
+  return result;
 }
 
 /* finalize an instruction info. */

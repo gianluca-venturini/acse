@@ -216,15 +216,6 @@ declaration : IDENTIFIER ASSIGN NUMBER
                if ($$ == NULL)
                   notifyError(AXE_OUT_OF_MEMORY);
             }
-            | IDENTIFIER LSQUARE NUMBER COMMA NUMBER RSQUARE
-            {
-               /* create a new instance of t_axe_declaration */
-               $$ = alloc_declaration_matrix($1, $3, $5);
-
-                  /* test if an `out of memory' occurred */
-               if ($$ == NULL)
-                  notifyError(AXE_OUT_OF_MEMORY);
-            }
             | IDENTIFIER
             {
                /* create a new instance of t_axe_declaration */
@@ -280,15 +271,6 @@ assign_statement : IDENTIFIER LSQUARE exp RSQUARE ASSIGN exp
                 * because of the value associated with IDENTIFIER.
                 * The value of IDENTIFIER is a string created
                 * by a call to the function `strdup' (see Acse.lex) */
-               free($1);
-            }
-            | IDENTIFIER LSQUARE exp COMMA exp RSQUARE ASSIGN exp
-            {
-               t_axe_expression linearIndex = 
-                 matrixLinearIndex(program, $1, $3, $5);
-
-               storeArrayElement(program, $1, linearIndex, $8);
-
                free($1);
             }
             | IDENTIFIER ASSIGN exp
@@ -491,22 +473,6 @@ exp: NUMBER      { $$ = create_expression ($1, IMMEDIATE); }
                      /* load the value IDENTIFIER[exp]
                       * into `arrayElement' */
                      reg = loadArrayElement(program, $1, $3);
-
-                     /* create a new expression */
-                     $$ = create_expression (reg, REGISTER);
-
-                     /* free the memory associated with the IDENTIFIER */
-                     free($1);
-   }
-   | IDENTIFIER LSQUARE exp COMMA exp RSQUARE {
-                     int reg;
-                     
-                     t_axe_expression linearIndex = 
-                       matrixLinearIndex(program, $1, $3, $5);
-
-                     /* load the value IDENTIFIER[exp]
-                      * into `arrayElement' */
-                     reg = loadArrayElement(program, $1, linearIndex);
 
                      /* create a new expression */
                      $$ = create_expression (reg, REGISTER);

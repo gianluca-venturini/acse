@@ -57,6 +57,9 @@ typedef struct t_axe_variable
                             * pointer or an empty string "") */
    t_axe_label *labelID;   /* a label that refers to the location
                             * of the variable inside the data segment */
+   int isMatrix;
+   int colonSize;
+   int rowSize;
 } t_axe_variable;
 
 /* a simbolic assembly instruction */
@@ -104,6 +107,9 @@ typedef struct t_axe_declaration
    int init_val;          /* initial value of the current variable. */
    char *ID;              /* variable identifier (should never be a NULL pointer
                            * or an empty string "") */
+   int isMatrix;
+   int colonSize;
+   int rowSize;
 } t_axe_declaration;
 
 typedef struct t_while_statement
@@ -139,12 +145,18 @@ extern t_axe_data * alloc_data(int directiveType, int value, t_axe_label *label)
 extern t_axe_variable * alloc_variable
       (char *ID, int type, int isArray, int arraySize, int init_val);
 
+extern t_axe_variable * alloc_variable_matrix
+      (char *ID, int type, int rows, int cols);
+
 /* finalize an instance of `t_axe_variable' */
 extern void free_variable (t_axe_variable *variable);
 
 /* create an instance of `t_axe_variable' */
 extern t_axe_declaration * alloc_declaration
       (char *ID, int isArray, int arraySize, int init_val);
+
+extern t_axe_declaration * alloc_declaration_matrix
+      (char *ID, int rows, int cols);
 
 /* finalize an instruction info. */
 extern void free_Instruction(t_axe_instruction *inst);

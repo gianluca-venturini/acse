@@ -52,6 +52,9 @@ extern t_axe_label * assignNewLabel(t_program_infos *program);
 extern void createVariable(t_program_infos *program
       , char *ID, int type, int isArray, int arraySize, int init_val);
 
+extern void createVariableiMatrix(t_program_infos *program
+      , char *ID, int type, int rows, int cols);
+
 /* get a previously allocated variable */
 extern t_axe_variable * getVariable
       (t_program_infos *program, char *ID);

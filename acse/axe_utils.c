@@ -75,10 +75,15 @@ void set_new_variables(t_program_infos *program
          notifyError(AXE_NULL_DECLARATION);
       }
 
+      if (current_decl->isMatrix) {
+        createVariableMatrix(program, current_decl->ID, varType, 
+                             current_decl->rowSize, current_decl->colonSize);
+      } else {
+
       /* create and assign a new variable to program */
       createVariable(program, current_decl->ID, varType, current_decl->isArray
             , current_decl->arraySize, current_decl->init_val);
-
+      }
       /* update the value of `current_element' */
       current_element = LNEXT(current_element);
    }

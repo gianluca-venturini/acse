@@ -12,6 +12,7 @@
 #include "symbol_table.h"
 #include "axe_utils.h"
 #include "axe_errors.h"
+#include "axe_expressions.h"
 
 void storeArrayElement(t_program_infos *program, char *ID
             , t_axe_expression index, t_axe_expression data)
@@ -106,4 +107,21 @@ int loadArrayAddress(t_program_infos *program
    /* return the identifier of the register that contains
     * the value of the array slot */
    return mova_register;
+}
+
+
+t_axe_expression matrixLinearIndex(t_program_infos *program, char *ID, 
+                                   t_axe_expression row, 
+                                   t_axe_expression col) {
+  t_axe_variable *var = getVariable(program, ID);
+  if (!var->isMatrix)
+    notifyError(AXE_INVALID_TYPE);
+
+  t_axe_expression fact = create_expression(var->rowSize, IMMEDIATE);
+
+  t_axe_expression li =
+    handle_bin_numeric_op(program, col, fact, MUL);
+  li = handle_bin_numeric_op(program, row, li, ADD);
+
+  return li;
 }

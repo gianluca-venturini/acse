@@ -67,6 +67,21 @@ void createVariable(t_program_infos *program, char *ID
    addVariable(program, var);
 }
 
+void createVariableMatrix(t_program_infos *program, char *ID, int type,
+                          int rows, int cols) {
+  /* test the preconditions */
+  if (program == NULL)
+    notifyError(AXE_PROGRAM_NOT_INITIALIZED);
+
+  t_axe_variable *var = alloc_variable_matrix(ID, type, rows, cols);
+  if (var == NULL)
+    notifyError(AXE_OUT_OF_MEMORY);
+
+  var->labelID = newLabel(program);
+
+  addVariable(program, var);
+}
+
 /* translate each instruction in his assembler symbolic representation */
 void translateCodeSegment(t_program_infos *program, FILE *fp)
 {
