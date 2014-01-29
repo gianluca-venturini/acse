@@ -89,10 +89,6 @@ t_reg_allocator *RA;       /* Register allocator. It implements the "Linear scan
 
 t_io_infos *file_infos;    /* input and output files used by the compiler */
 
-unsigned int instr_countdown=0;
-t_axe_label *after_stmt_return=NULL;
-t_axe_label *after_stmt_code=NULL;
-
 %}
 
 %expect 1
@@ -133,7 +129,6 @@ t_axe_label *after_stmt_code=NULL;
 %token <intval> TYPE
 %token <svalue> IDENTIFIER
 %token <intval> NUMBER
-%token <label> AFTER_OP
 
 %type <expr> exp
 %type <decl> declaration
@@ -243,47 +238,13 @@ statements  : statements statement       { /* does nothing */ }
             | statement                  { /* does nothing */ }
 ;
 
-statement : statement2 { if(after_stmt_code != NULL && instr_countdown==0) {
-			   gen_bt_instruction(program, after_stmt_code, 0);
-			   assignLabel(program, after_stmt_return);
-			 }
-			 instr_countdown--; 
-		       }
-;
-
 /* A statement can be either an assignment statement or a control statement
  * or a read/write statement or a semicolon */
-statement2   : assign_statement SEMI      { /* does nothing */ }
+statement   : assign_statement SEMI      { /* does nothing */ }
             | control_statement          { /* does nothing */ }
             | read_write_statement SEMI  { /* does nothing */ }
-	    | after_stmt 			 { /* does nothing */ }
             | SEMI            { gen_nop_instruction(program); }
 ;
-
-after_stmt : AFTER_OP exp DO 
-	  { 
-	    if ($2.expression_type != IMMEDIATE || $2.value < 0) {
-	      printMessage("Positive immediate expression expected");
-	      abort();
-	    }
-	    if (after_stmt_code != NULL) {
-	      printMessage("There can be just one @-do construct");
-	      abort();
-	    }
-	    $1 = newLabel(program);
-	    gen_bt_instruction(program, $1, 0);
-	    after_stmt_code=assignNewLabel(program);
-	  } 
-	  code_block
-	  { 
-	    instr_countdown=$2.value;
-
-	    after_stmt_return=newLabel(program);
-	    gen_bt_instruction(program, after_stmt_return, 0);
-
-	    assignLabel(program, $1);
-	    
-	  }
 
 control_statement : if_statement         { /* does nothing */ }
             | while_statement            { /* does nothing */ }
