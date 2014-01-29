@@ -1,0 +1,10 @@
+/*
+ * Author: Ettore Speziale
+ * vec_sub.src
+ */
+
+int a[10];
+int b[10];
+int c[10];
+
+vec_sub(c, a, b);

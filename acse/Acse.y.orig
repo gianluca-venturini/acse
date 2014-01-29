@@ -23,7 +23,6 @@
 #include "axe_errors.h"
 #include "collections.h"
 #include "axe_expressions.h"
-#include "axe_vec.h"
 #include "axe_gencode.h"
 #include "axe_utils.h"
 #include "axe_array.h"
@@ -122,8 +121,6 @@ t_io_infos *file_infos;    /* input and output files used by the compiler */
 %token RETURN
 %token READ
 %token WRITE
-%token VEC_ADD
-%token VEC_SUB
 
 %token <label> DO
 %token <while_stmt> WHILE
@@ -242,11 +239,10 @@ statements  : statements statement       { /* does nothing */ }
 ;
 
 /* A statement can be either an assignment statement or a control statement
- * or a read/write or a vectorial statement or a semicolon */
+ * or a read/write statement or a semicolon */
 statement   : assign_statement SEMI      { /* does nothing */ }
             | control_statement          { /* does nothing */ }
             | read_write_statement SEMI  { /* does nothing */ }
-            | vec_statement SEMI         { /* does nothing */ }
             | SEMI            { gen_nop_instruction(program); }
 ;
 
@@ -258,10 +254,6 @@ control_statement : if_statement         { /* does nothing */ }
 
 read_write_statement : read_statement  { /* does nothing */ }
                      | write_statement { /* does nothing */ }
-;
-
-vec_statement : vec_add_statement { /* does nothing */ }
-              | vec_sub_statement { /* does nothing */ }
 ;
 
 assign_statement : IDENTIFIER LSQUARE exp RSQUARE ASSIGN exp
@@ -458,24 +450,6 @@ write_statement : WRITE LPAR exp RPAR
 
                /* write to standard output an integer value */
                gen_write_instruction (program, location);
-            }
-;
-
-vec_add_statement : VEC_ADD LPAR
-                    IDENTIFIER COMMA
-                    IDENTIFIER COMMA
-                    IDENTIFIER RPAR
-            {
-               handle_vec_op (program, $3, $5, $7, VADD);
-            }
-;
-
-vec_sub_statement : VEC_SUB LPAR
-                    IDENTIFIER COMMA
-                    IDENTIFIER COMMA
-                    IDENTIFIER RPAR
-            {
-               handle_vec_op (program, $3, $5, $7, VSUB);
             }
 ;
 

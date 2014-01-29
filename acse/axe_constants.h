@@ -82,6 +82,10 @@
 #define AXE_WRITE 62
 #define INVALID_OPCODE -1
 
+/* vectorial operations */
+#define VADD 100
+#define VSUB 101
+
 /* data types */
 #define INTEGER_TYPE 0
 #define UNKNOWN_TYPE -1
