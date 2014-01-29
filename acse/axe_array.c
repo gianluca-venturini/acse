@@ -12,6 +12,7 @@
 #include "symbol_table.h"
 #include "axe_utils.h"
 #include "axe_errors.h"
+#include "axe_expressions.h"
 
 void storeArrayElement(t_program_infos *program, char *ID
             , t_axe_expression index, t_axe_expression data)
@@ -106,4 +107,63 @@ int loadArrayAddress(t_program_infos *program
    /* return the identifier of the register that contains
     * the value of the array slot */
    return mova_register;
+}
+
+
+extern void mirrorArray(t_program_infos *program, t_axe_variable* array, 
+                        t_axe_expression start, t_axe_expression end) {
+    
+    int from_reg, to_reg, result, el1_reg, el2_reg;
+    t_axe_expression from_expr, to_expr, el1_expr, el2_expr;
+    t_axe_label *condition_label, *end_label;
+    
+    /* Compute initial indexes */
+    if(start.expression_type == IMMEDIATE) {
+        from_reg = gen_load_immediate(program, start.value);
+    }
+    else {
+        from_reg = getNewRegister(program);
+        gen_andb_instruction(program, from_reg, start.value, start.value, CG_DIRECT_ALL);
+    }
+    from_expr = create_expression(from_reg, REGISTER);
+    
+    if(end.expression_type == IMMEDIATE) {
+        to_reg = gen_load_immediate(program, end.value);
+    }
+    else {
+        to_reg = getNewRegister(program);
+        gen_andb_instruction(program, to_reg, end.value, end.value, CG_DIRECT_ALL);
+    }
+    to_expr = create_expression(to_reg, REGISTER);
+    gen_subi_instruction(program, to_reg, to_reg, 1);
+    
+    /* Check condition */
+    condition_label = assignNewLabel(program);
+    
+    result = getNewRegister(program);
+    gen_sub_instruction(program, result, to_reg, from_reg, CG_DIRECT_ALL);
+        
+    end_label = newLabel(program);
+    gen_ble_instruction(program, end_label, 0);
+    
+    /* Swap */
+    el1_reg = loadArrayElement(program, array->ID, from_expr);
+    el1_expr = create_expression(el1_reg, REGISTER);
+    
+    el2_reg = loadArrayElement(program, array->ID, to_expr);
+    el2_expr = create_expression(el2_reg, REGISTER);
+    
+    storeArrayElement(program, array->ID, to_expr, el1_expr);
+    storeArrayElement(program, array->ID, from_expr, el2_expr);
+    
+    /* Update indices */
+    gen_addi_instruction(program, from_reg, from_reg, 1);
+    gen_subi_instruction(program, to_reg, to_reg, 1);
+    
+    /* Go back to the condition check */
+    gen_bt_instruction(program, condition_label, 0);
+    
+    /* The End */
+    assignLabel(program, end_label);
+        
 }

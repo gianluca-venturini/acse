@@ -1,0 +1,14 @@
+***************
+*** 48,51 ****
+  extern void storeArrayElement(t_program_infos *program, char *ID
+              , t_axe_expression index, t_axe_expression data);
+  
+  
+--- 48,54 ----
+  extern void storeArrayElement(t_program_infos *program, char *ID
+              , t_axe_expression index, t_axe_expression data);
+  
++ 
++ extern void mirrorArray(t_program_infos *program, t_axe_variable* array, 
++                         t_axe_expression start, t_axe_expression end);
+  

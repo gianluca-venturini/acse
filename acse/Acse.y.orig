@@ -243,45 +243,7 @@ statements  : statements statement       { /* does nothing */ }
 statement   : assign_statement SEMI      { /* does nothing */ }
             | control_statement          { /* does nothing */ }
             | read_write_statement SEMI  { /* does nothing */ }
-            | shift_statement SEMI       { /* does nothing */ }
             | SEMI            { gen_nop_instruction(program); }
-;
-
-shift_statement : IDENTIFIER SHR_OP exp {
-        t_axe_variable* id = getVariable(program, $1);
-        
-        if( ! id->isArray) {
-            printMessage("Trying to shift a non-array variable");
-            exit(-1);
-        }
-        
-        t_axe_expression e_zero = create_expression(0, IMMEDIATE);
-        t_axe_expression e_arraysize = create_expression(id->arraySize, 
-                                                         IMMEDIATE);
-        
-        mirrorArray(program, id, e_zero, e_arraysize);
-        mirrorArray(program, id, e_zero, $3);
-        mirrorArray(program, id, $3, e_arraysize);
-    }
-    | IDENTIFIER SHL_OP exp {
-        t_axe_variable* id = getVariable(program, $1);
-        
-        if( ! id->isArray) {
-            printMessage("Trying to shift a non-array variable");
-            exit(-1);
-        }
-        
-        t_axe_expression e_zero = create_expression(0, IMMEDIATE);
-        t_axe_expression e_arraysize = create_expression(id->arraySize, 
-                                                         IMMEDIATE);
-        t_axe_expression e_split = handle_bin_numeric_op(program, e_arraysize, 
-                                                         $3, SUB);
-        
-        mirrorArray(program, id, e_zero, e_arraysize);
-        mirrorArray(program, id, e_zero, e_split);
-        mirrorArray(program, id, e_split, e_arraysize);
-    }
-    
 ;
 
 control_statement : if_statement         { /* does nothing */ }
