@@ -117,6 +117,7 @@ t_io_infos *file_infos;    /* input and output files used by the compiler */
 %token ASSIGN LT GT SHL_OP SHR_OP EQ NOTEQ LTEQ GTEQ
 %token ANDAND OROR
 %token COMMA
+%token IMPLICIT
 %token FOR
 %token RETURN
 %token READ
@@ -163,7 +164,17 @@ t_io_infos *file_infos;    /* input and output files used by the compiler */
       2. A list of instructions. (at least one instruction!).
  * When the rule associated with the non-terminal `program' is executed,
  * the parser notify it to the `program' singleton instance. */
-program  : var_declarations statements
+program  : var_declarations {
+                                  //Create implicit variable
+                                  t_axe_declaration *dec = alloc_declaration("$", 0, 0, 42);
+                                  t_list *dec_list = addElement(NULL, dec, -1);
+
+                                  if(dec == NULL)
+                                    notifyError(AXE_OUT_OF_MEMORY);
+
+                                  set_new_variables(program, INTEGER_TYPE, dec_list);
+
+                            } statements
          {
             /* Notify the end of the program. Once called
              * the function `set_end_Program' - if necessary -
@@ -303,6 +314,13 @@ assign_statement : IDENTIFIER LSQUARE exp RSQUARE ASSIGN exp
                /* free the memory associated with the IDENTIFIER */
                free($1);
             }
+            | exp  {
+                      int reg = get_symbol_location(program, "$", 0);
+                      if ($1.expression_type == IMMEDIATE)
+                         gen_addi_instruction(program, reg, REG_0, $1.value);
+                      else
+                         gen_add_instruction(program, reg, REG_0, $1.value, CG_DIRECT_ALL);
+                   }
 ;
             
 if_statement   : if_stmt
@@ -566,6 +584,10 @@ exp: NUMBER      { $$ = create_expression ($1, IMMEDIATE); }
                                  (program, exp_r0, $2, SUB);
                         }
                      }
+    | IMPLICIT {  
+                  int reg = get_symbol_location(program, "$", 0);
+                  $$ = create_expression (reg, REGISTER); 
+               }
 ;
 
 %%
