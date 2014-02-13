@@ -114,7 +114,7 @@ t_io_infos *file_infos;    /* input and output files used by the compiler */
 %token LBRACE RBRACE LPAR RPAR LSQUARE RSQUARE
 %token SEMI COLON PLUS MINUS MUL_OP DIV_OP MOD_OP
 %token AND_OP OR_OP NOT_OP
-%token ASSIGN LT GT SHL_OP SHR_OP EQ NOTEQ LTEQ GTEQ
+%token ASSIGN LT GT SHL_OP SHR_OP EQ NOTEQ LTEQ GTEQ SRL_OP SRR_OP
 %token ANDAND OROR
 %token COMMA
 %token FOR
@@ -147,7 +147,7 @@ t_io_infos *file_infos;    /* input and output files used by the compiler */
 %left AND_OP
 %left EQ NOTEQ
 %left LT GT LTEQ GTEQ
-%left SHL_OP SHR_OP
+%left SHL_OP SHR_OP SRL_OP SRR_OP
 %left MINUS PLUS
 %left MUL_OP DIV_OP
 %right NOT
@@ -545,6 +545,28 @@ exp: NUMBER      { $$ = create_expression ($1, IMMEDIATE); }
    }
    | exp SHL_OP exp  {  $$ = handle_bin_numeric_op(program, $1, $3, SHL); }
    | exp SHR_OP exp  {  $$ = handle_bin_numeric_op(program, $1, $3, SHR); }
+
+   | exp SRL_OP exp  {  
+                        $$ = handle_bin_numeric_op(program, $1, $3, SHL); 
+                        t_axe_expression size = create_expression(32, IMMEDIATE);
+                        t_axe_expression zero = create_expression(0, IMMEDIATE);
+                        t_axe_expression shift_r = handle_bin_numeric_op(program, size, $3, SUB);
+                        t_axe_expression copy = handle_bin_numeric_op(program, $1, zero, ADD);
+                        t_axe_expression shift1 = handle_bin_numeric_op(program, $1, $3, SHL);
+                        t_axe_expression shift2 = handle_bin_numeric_op(program, copy, shift_r, SHR);
+                        $$ = handle_bin_numeric_op(program, shift1, shift2, ORB); 
+                     }
+   | exp SRR_OP exp  {  
+                        $$ = handle_bin_numeric_op(program, $1, $3, SHL); 
+                        t_axe_expression size = create_expression(32, IMMEDIATE);
+                        t_axe_expression zero = create_expression(0, IMMEDIATE);
+                        t_axe_expression shift_l = handle_bin_numeric_op(program, size, $3, SUB);
+                        t_axe_expression copy = handle_bin_numeric_op(program, $1, zero, ADD);
+                        t_axe_expression shift1 = handle_bin_numeric_op(program, $1, $3, SHR);
+                        t_axe_expression shift2 = handle_bin_numeric_op(program, copy, shift_l, SHL);
+                        $$ = handle_bin_numeric_op(program, shift1, shift2, ORB); 
+                     }
+
    | exp ANDAND exp  {  $$ = handle_bin_numeric_op(program, $1, $3, ANDL); }
    | exp OROR exp    {  $$ = handle_bin_numeric_op(program, $1, $3, ORL); }
    | LPAR exp RPAR   { $$ = $2; }

@@ -81,6 +81,8 @@ ID       [a-zA-Z_][a-zA-Z0-9_]*
 ">"               { return GT; }
 "<<"              { return SHL_OP; }
 ">>"              { return SHR_OP; }
+"<<<"			  { return SRL_OP; }
+">>>"			  { return SRR_OP; }
 "=="              { return EQ; }
 "!="              { return NOTEQ; }
 "<="              { return LTEQ; }
