@@ -122,8 +122,12 @@ t_io_infos *file_infos;    /* input and output files used by the compiler */
 %token READ
 %token WRITE
 
+%token TO
+%token DOWNTO
+
 %token <label> DO
 %token <while_stmt> WHILE
+%token <while_stmt> FORALL
 %token <label> IF
 %token <label> ELSE
 %token <intval> TYPE
@@ -134,6 +138,7 @@ t_io_infos *file_infos;    /* input and output files used by the compiler */
 %type <decl> declaration
 %type <list> declaration_list
 %type <label> if_stmt
+%type <intval> to_downto
 
 /*=========================================================================
                           OPERATOR PRECEDENCES
@@ -248,6 +253,7 @@ statement   : assign_statement SEMI      { /* does nothing */ }
 
 control_statement : if_statement         { /* does nothing */ }
             | while_statement            { /* does nothing */ }
+            | forall_statement           { /* does nothing */ }
             | do_while_statement SEMI    { /* does nothing */ }
             | return_statement SEMI      { /* does nothing */ }
 ;
@@ -407,6 +413,65 @@ do_while_statement  : DO
                      }
 ;
 
+forall_statement : FORALL
+                  {
+                    $1 = create_while_statement();
+                  }
+                  LPAR IDENTIFIER ASSIGN exp to_downto exp RPAR
+                  {
+                    //Initialization of the variable
+                    int location = get_symbol_location(program, $4, 0);
+
+                    if ($6.expression_type == IMMEDIATE)
+                      gen_addi_instruction(program, location, REG_0, $6.value);
+                    else
+                      gen_add_instruction(program, location, REG_0, $6.value, CG_DIRECT_ALL);
+
+                    $1.label_condition = assignNewLabel(program);
+
+
+                    t_axe_expression inc_v = create_expression(location, REGISTER);
+                    t_axe_expression one;
+                    if($7 == 0)
+                      one = create_expression(1, IMMEDIATE);
+                    else
+                      one = create_expression(-1, IMMEDIATE);
+                    inc_v = handle_bin_numeric_op(program, inc_v, one, SUB);
+
+                    t_axe_expression condition;
+                    if($7 == 0)
+                      condition = handle_binary_comparison(program, inc_v, $8, _LT_);
+                    else
+                      condition = handle_binary_comparison(program, inc_v, $8, _GT_);
+                    gen_andb_instruction(program, condition.value, condition.value, condition.value, CG_DIRECT_ALL);
+
+
+                     /* reserve a new label. This new label will point
+                      * to the first instruction after the while code
+                      * block */
+                     $1.label_end = newLabel(program);
+
+                     /* if `exp' returns FALSE, jump to the label $1.label_end */
+                     gen_beq_instruction (program, $1.label_end, 0);                
+                  }
+                  code_block
+                  {
+                    int location = get_symbol_location(program, $4, 0);
+
+                    if($7 == 0)
+                      gen_addi_instruction(program, location, location, 1);
+                    else
+                      gen_addi_instruction(program, location, location, -1);
+
+                     gen_bt_instruction(program, $1.label_condition, 0);
+
+                     /* fix the label `label_end' */
+                     assignLabel(program, $1.label_end);
+                  }
+;
+to_downto : TO      { $$ = 0 }
+          | DOWNTO  { $$ = 1 }
+;
 return_statement : RETURN
             {
                /* insert an HALT instruction */

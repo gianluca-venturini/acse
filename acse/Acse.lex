@@ -95,6 +95,10 @@ ID       [a-zA-Z_][a-zA-Z0-9_]*
 "if"              { return IF; }
 "int"             { yylval.intval = INTEGER_TYPE; return TYPE; }
 "while"           { return WHILE; }
+"forall"		  { return FORALL; }
+"to"			  {return TO; }
+"downto"		  {return DOWNTO; }
+
 "return"          { return RETURN; }
 "read"            { return READ; }
 "write"           { return WRITE; }
