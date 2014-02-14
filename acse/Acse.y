@@ -89,6 +89,12 @@ t_reg_allocator *RA;       /* Register allocator. It implements the "Linear scan
 
 t_io_infos *file_infos;    /* input and output files used by the compiler */
 
+
+//Global variables for break, continue
+
+t_axe_label *continuelabel;
+t_axe_label *endLabel;
+
 %}
 
 %expect 1
@@ -124,6 +130,8 @@ t_io_infos *file_infos;    /* input and output files used by the compiler */
 
 %token TO
 %token DOWNTO
+%token BREAK
+%token CONTINUE
 
 %token <label> DO
 %token <while_stmt> WHILE
@@ -256,6 +264,8 @@ control_statement : if_statement         { /* does nothing */ }
             | forall_statement           { /* does nothing */ }
             | do_while_statement SEMI    { /* does nothing */ }
             | return_statement SEMI      { /* does nothing */ }
+            | continue SEMI              { /* does nothing */ }
+            | break SEMI                 { /* does nothing */ }
 ;
 
 read_write_statement : read_statement  { /* does nothing */ }
@@ -429,7 +439,6 @@ forall_statement : FORALL
 
                     $1.label_condition = assignNewLabel(program);
 
-
                     t_axe_expression inc_v = create_expression(location, REGISTER);
                     t_axe_expression one;
                     if($7 == 0)
@@ -449,13 +458,19 @@ forall_statement : FORALL
                      /* reserve a new label. This new label will point
                       * to the first instruction after the while code
                       * block */
-                     $1.label_end = newLabel(program);
+                     $1.label_end = newLabel(program); 
+                     endLabel = $1.label_end;
 
                      /* if `exp' returns FALSE, jump to the label $1.label_end */
-                     gen_beq_instruction (program, $1.label_end, 0);                
+                     gen_beq_instruction (program, $1.label_end, 0);   
+
+                     continuelabel =  newLabel(program);             
                   }
                   code_block
                   {
+
+                    assignLabel(program, continuelabel);
+
                     int location = get_symbol_location(program, $4, 0);
 
                     if($7 == 0)
@@ -469,9 +484,17 @@ forall_statement : FORALL
                      assignLabel(program, $1.label_end);
                   }
 ;
+
 to_downto : TO      { $$ = 0 }
           | DOWNTO  { $$ = 1 }
 ;
+
+continue :  CONTINUE { gen_bt_instruction(program, continuelabel, 0); }
+;
+
+break :  BREAK    { gen_bt_instruction(program, endLabel, 0); }
+;
+
 return_statement : RETURN
             {
                /* insert an HALT instruction */
