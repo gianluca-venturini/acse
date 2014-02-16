@@ -202,6 +202,7 @@ declaration : IDENTIFIER ASSIGN NUMBER
             {
                /* create a new instance of t_axe_declaration */
                $$ = alloc_declaration($1, 0, 0, $3);
+               $$->isMatrix = 0;
 
                /* test if an `out of memory' occurred */
                if ($$ == NULL)
@@ -211,15 +212,29 @@ declaration : IDENTIFIER ASSIGN NUMBER
             {
                /* create a new instance of t_axe_declaration */
                $$ = alloc_declaration($1, 1, $3, 0);
+               $$->isMatrix = 0;
 
                   /* test if an `out of memory' occurred */
                if ($$ == NULL)
                   notifyError(AXE_OUT_OF_MEMORY);
             }
+            | IDENTIFIER LSQUARE NUMBER COMMA NUMBER RSQUARE
+            {
+              $$ = alloc_declaration($1, 1, $3, 0);
+
+                /* test if an `out of memory' occurred */
+               if ($$ == NULL)
+                  notifyError(AXE_OUT_OF_MEMORY);
+
+              $$->isMatrix = 1;
+              $$->arraySize2 = $5;
+
+            }
             | IDENTIFIER
             {
                /* create a new instance of t_axe_declaration */
                $$ = alloc_declaration($1, 0, 0, 0);
+               $$->isMatrix = 0;
                
                /* test if an `out of memory' occurred */
                if ($$ == NULL)
@@ -272,6 +287,20 @@ assign_statement : IDENTIFIER LSQUARE exp RSQUARE ASSIGN exp
                 * The value of IDENTIFIER is a string created
                 * by a call to the function `strdup' (see Acse.lex) */
                free($1);
+            }
+            | IDENTIFIER LSQUARE exp COMMA exp RSQUARE ASSIGN exp
+            {
+              t_axe_variable *v = getVariable(program, $1);
+              if(!v->isMatrix) {
+                printf("Error, you must provide a valid matrix\n");
+                exit(-1);
+              }
+              t_axe_expression size = create_expression(v->arraySize, IMMEDIATE);
+              t_axe_expression tmp = handle_bin_numeric_op(program, $3, size, MUL);
+              t_axe_expression index = handle_bin_numeric_op(program, tmp, $5, ADD);
+              storeArrayElement(program, $1, index, $8);
+
+              free($1);
             }
             | IDENTIFIER ASSIGN exp
             {
@@ -473,6 +502,28 @@ exp: NUMBER      { $$ = create_expression ($1, IMMEDIATE); }
                      /* load the value IDENTIFIER[exp]
                       * into `arrayElement' */
                      reg = loadArrayElement(program, $1, $3);
+
+                     /* create a new expression */
+                     $$ = create_expression (reg, REGISTER);
+
+                     /* free the memory associated with the IDENTIFIER */
+                     free($1);
+   }
+   | IDENTIFIER LSQUARE exp COMMA exp RSQUARE {
+                     int reg;
+
+                     t_axe_variable *v = getVariable(program, $1);
+                     if(!v->isMatrix) {
+                       printf("Error, you must provide a valid matrix\n");
+                       exit(-1);
+                      }
+                     t_axe_expression size = create_expression(v->arraySize, IMMEDIATE);
+                     t_axe_expression tmp = handle_bin_numeric_op(program, $3, size, MUL);
+                     t_axe_expression index = handle_bin_numeric_op(program, tmp, $5, ADD);
+                     
+                     /* load the value IDENTIFIER[exp]
+                      * into `arrayElement' */
+                     reg = loadArrayElement(program, $1, index);
 
                      /* create a new expression */
                      $$ = create_expression (reg, REGISTER);

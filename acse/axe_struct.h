@@ -45,8 +45,10 @@ typedef struct t_axe_variable
 {
    int type;      /* a valid data type @see `axe_constants.h' */
    int isArray;   /* must be TRUE if the current variable is an array */
+   int isMatrix;
    int arraySize; /* the size of the array. This information is useful only
                    * if the field `isArray' is TRUE */
+   int arraySize2;  /* dimension of array */
    int init_val;  /* initial value of the current variable. Actually it is
                    * implemented as a integer value. `int' is
                    * the only supported type at the moment,
@@ -99,8 +101,10 @@ typedef struct t_axe_expression
 typedef struct t_axe_declaration
 {
    int isArray;           /* must be TRUE if the current variable is an array */
+   int isMatrix;
    int arraySize;         /* the size of the array. This information is useful only
                            * if the field `isArray' is TRUE */
+   int arraySize2;
    int init_val;          /* initial value of the current variable. */
    char *ID;              /* variable identifier (should never be a NULL pointer
                            * or an empty string "") */

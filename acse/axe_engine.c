@@ -47,7 +47,7 @@ static void addVariable(t_program_infos *program, t_axe_variable *variable);
       
 /* create a new variable */
 void createVariable(t_program_infos *program, char *ID
-      , int type, int isArray, int arraySize, int init_val)
+      , int type, int isArray, int isMatrix, int arraySize, int arraySize2, int init_val)
 {
    t_axe_variable *var;
          
@@ -55,8 +55,16 @@ void createVariable(t_program_infos *program, char *ID
    if (program == NULL)
       notifyError(AXE_PROGRAM_NOT_INITIALIZED);
 
+   if(!isMatrix)
+      arraySize2 = 1;
+   else {
+      isArray = 1;
+   }
+
    /* initialize a new variable */
-   var = alloc_variable(ID, type, isArray, arraySize, init_val);
+   var = alloc_variable(ID, type, isArray, arraySize*arraySize2, init_val);
+   var->isMatrix = isMatrix;
+   var->arraySize2 = arraySize2;
    if (var == NULL)
       notifyError(AXE_OUT_OF_MEMORY);
    
