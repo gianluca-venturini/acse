@@ -89,6 +89,8 @@ t_reg_allocator *RA;       /* Register allocator. It implements the "Linear scan
 
 t_io_infos *file_infos;    /* input and output files used by the compiler */
 
+void vectOperation(char *dest, char *vect1, char *vect2, int operation);
+
 %}
 
 %expect 1
@@ -121,6 +123,8 @@ t_io_infos *file_infos;    /* input and output files used by the compiler */
 %token RETURN
 %token READ
 %token WRITE
+
+%token VECT_ADD VECT_SUB
 
 %token <label> DO
 %token <while_stmt> WHILE
@@ -244,6 +248,23 @@ statement   : assign_statement SEMI      { /* does nothing */ }
             | control_statement          { /* does nothing */ }
             | read_write_statement SEMI  { /* does nothing */ }
             | SEMI            { gen_nop_instruction(program); }
+            | vect_op SEMI               { /* does nothing */ }
+;
+
+vect_op : VECT_ADD LPAR IDENTIFIER COMMA IDENTIFIER COMMA IDENTIFIER RPAR 
+         {
+            vectOperation($3, $5, $7, 0);
+            free($3);
+            free($5);
+            free($7);
+         }
+         | VECT_SUB LPAR IDENTIFIER COMMA IDENTIFIER COMMA IDENTIFIER RPAR 
+         {
+            vectOperation($3, $5, $7, 1);
+            free($3);
+            free($5);
+            free($7);
+         }
 ;
 
 control_statement : if_statement         { /* does nothing */ }
@@ -664,4 +685,42 @@ int yyerror(const char* errmsg)
    errorcode = AXE_SYNTAX_ERROR;
    
    return 0;
+}
+
+void vectOperation(char *dest, char *vect1, char *vect2, int operation)
+{
+  t_axe_variable *a = getVariable(program, dest);
+  t_axe_variable *b = getVariable(program, vect1);
+  t_axe_variable *c = getVariable(program, vect2);
+  t_axe_label *label = newLabel(program);
+
+  if(!a->isArray || !b->isArray || !c->isArray || a->arraySize != b->arraySize || b->arraySize != c->arraySize)
+  {
+    printf("Error: the three vectors must be of the same length\n");
+    exit(-1);
+  }
+
+  t_axe_expression arraySize = create_expression(a->arraySize, IMMEDIATE);
+
+  t_axe_expression index = create_expression(getNewRegister(program), REGISTER);
+  gen_addi_instruction(program, index.value, REG_0, 0);
+  assignLabel(program, label);
+
+  int loc_a = loadArrayElement(program, vect1, index);
+  int loc_b = loadArrayElement(program, vect2, index);
+  t_axe_expression expA = create_expression(loc_a, REGISTER);
+  t_axe_expression expB = create_expression(loc_b, REGISTER);
+  t_axe_expression result;
+
+  if(operation != ADD && operation != SUB)
+  {
+    printf("Error: operation %d not yet implemented\n", operation);
+    exit(-1);
+  }
+
+  result = handle_bin_numeric_op(program, expA, expB, operation);
+  storeArrayElement(program, dest, index, result);
+  gen_addi_instruction(program, index.value, index.value, 1);
+  handle_binary_comparison(program, index, arraySize, _LT_);
+  gen_bne_instruction(program, label, 0);
 }

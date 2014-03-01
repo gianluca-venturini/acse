@@ -2,7 +2,7 @@ objects = executor asm compiler
 dirs:=mace assembler acse tests
 
 
-all : bin $(objects)
+all : bin $(objects) test_bin
 
 bin :
 	mkdir -p bin
@@ -24,3 +24,10 @@ clean :
 	rm -rf bin
 
 .PHONY : all clean tests executor asm compiler
+
+
+test_bin :
+	cd ./bin && ./acse test.src
+	cd ./bin && ./asm output.asm
+	cd ./bin &&  ./mace output.o
+
