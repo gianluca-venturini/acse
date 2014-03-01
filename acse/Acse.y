@@ -89,6 +89,8 @@ t_reg_allocator *RA;       /* Register allocator. It implements the "Linear scan
 
 t_io_infos *file_infos;    /* input and output files used by the compiler */
 
+t_list *defineList = NULL;
+
 %}
 
 %expect 1
@@ -121,6 +123,8 @@ t_io_infos *file_infos;    /* input and output files used by the compiler */
 %token RETURN
 %token READ
 %token WRITE
+
+%token DEFINE
 
 %token <label> DO
 %token <while_stmt> WHILE
@@ -163,7 +167,7 @@ t_io_infos *file_infos;    /* input and output files used by the compiler */
       2. A list of instructions. (at least one instruction!).
  * When the rule associated with the non-terminal `program' is executed,
  * the parser notify it to the `program' singleton instance. */
-program  : var_declarations statements
+program  : defines var_declarations statements
          {
             /* Notify the end of the program. Once called
              * the function `set_end_Program' - if necessary -
@@ -175,6 +179,27 @@ program  : var_declarations statements
             YYACCEPT;
          }
 ;
+
+defines : defines define { /* does nothing */ }
+        | /* empty */ 
+;
+
+define : DEFINE IDENTIFIER exp
+        {
+          char *id = strdup($2);
+          defineList = addElement(defineList, id, -1);
+
+          if($3.expression_type == IMMEDIATE)
+            createVariable(program, id, INTEGER_TYPE, 0, 0, $3.value);
+          else
+          {
+            createVariable(program, id, INTEGER_TYPE, 0, 0, 0);
+            int location = get_symbol_location(program, id, 0);
+            gen_addi_instruction(program, location, $3.value, 0);
+          }
+
+          free($2);
+        }
 
 var_declarations : var_declarations var_declaration   { /* does nothing */ }
                  | /* empty */                        { /* does nothing */ }
@@ -200,6 +225,7 @@ declaration_list  : declaration_list COMMA declaration
 
 declaration : IDENTIFIER ASSIGN NUMBER
             {
+
                /* create a new instance of t_axe_declaration */
                $$ = alloc_declaration($1, 0, 0, $3);
 
@@ -277,6 +303,11 @@ assign_statement : IDENTIFIER LSQUARE exp RSQUARE ASSIGN exp
             {
                int location;
                t_axe_instruction *instr;
+
+               if(isDefine($1)) {
+                printf("Error: you can't assign to a define\n");
+                exit(-1);
+               }
 
                /* in order to assign a value to a variable, we have to
                 * know where the variable is located (i.e. in which register).
@@ -664,4 +695,14 @@ int yyerror(const char* errmsg)
    errorcode = AXE_SYNTAX_ERROR;
    
    return 0;
+}
+
+int isDefine(char *id) {
+  int i;
+  for(i=0; i<getLength(defineList); i++) {
+    if(strcmp(getElementAt(defineList, i)->data, id) == 0)
+      return 1;
+  }
+  return 0;
+
 }
