@@ -112,7 +112,7 @@ t_io_infos *file_infos;    /* input and output files used by the compiler */
 %start program
 
 %token LBRACE RBRACE LPAR RPAR LSQUARE RSQUARE
-%token SEMI COLON PLUS MINUS MUL_OP DIV_OP MOD_OP
+%token SEMI COLON PLUS MINUS MUL_OP DIV_OP
 %token AND_OP OR_OP NOT_OP
 %token ASSIGN LT GT SHL_OP SHR_OP EQ NOTEQ LTEQ GTEQ
 %token ANDAND OROR
@@ -121,6 +121,8 @@ t_io_infos *file_infos;    /* input and output files used by the compiler */
 %token RETURN
 %token READ
 %token WRITE
+%token MOD
+%token POW
 
 %token <label> DO
 %token <while_stmt> WHILE
@@ -141,6 +143,7 @@ t_io_infos *file_infos;    /* input and output files used by the compiler */
 
 %left COMMA
 %left ASSIGN
+%left POW
 %left OROR
 %left ANDAND
 %left OR_OP
@@ -149,6 +152,7 @@ t_io_infos *file_infos;    /* input and output files used by the compiler */
 %left LT GT LTEQ GTEQ
 %left SHL_OP SHR_OP
 %left MINUS PLUS
+%left MOD
 %left MUL_OP DIV_OP
 %right NOT
 
@@ -566,6 +570,62 @@ exp: NUMBER      { $$ = create_expression ($1, IMMEDIATE); }
                                  (program, exp_r0, $2, SUB);
                         }
                      }
+    | exp MOD exp {
+      t_axe_expression q = handle_bin_numeric_op(program, $1, $3, DIV);
+      t_axe_expression i = handle_bin_numeric_op(program, q, $3, MUL);
+      t_axe_expression r = handle_bin_numeric_op(program, $1, i, SUB);
+      $$ = r;
+    }
+    | exp POW exp {
+      t_axe_label *end = newLabel(program);
+      $$ = create_expression(1, IMMEDIATE);
+
+      if($3.expression_type == IMMEDIATE) 
+      {
+        if($3.value == 0) {
+          gen_bt_instruction(program, end, 0);
+        }
+        else if($3.value == 0) {
+          printf("Error: can't use negative power in ACSE\n");
+          exit(-1);
+        }
+      }
+
+      t_axe_expression count = create_expression(getNewRegister(program), REGISTER);
+      gen_addi_instruction(program, count.value, REG_0, 1);
+
+      int result = getNewRegister(program);
+      if($1.expression_type == IMMEDIATE) 
+      {
+        gen_addi_instruction(program, result, REG_0, $1.value);
+      }
+      else
+      {
+        gen_addi_instruction(program, result, $1.value, 0);
+      }
+
+      t_axe_label *label = assignNewLabel(program);
+
+      t_axe_expression e = handle_binary_comparison(program, count, $3, _LT_);
+      if(e.expression_type == IMMEDIATE)
+        gen_load_immediate(program, e.value);
+      else
+        gen_andb_instruction(program, e.value, e.value, e.value, CG_DIRECT_ALL);
+      gen_beq_instruction(program, end, 0);
+
+      if($1.expression_type == IMMEDIATE)
+        gen_muli_instruction(program, result, result, $1.value);
+      else
+        gen_mul_instruction(program, result, result, $1.value, CG_DIRECT_ALL);
+
+      gen_addi_instruction(program, count.value, count.value, 1);
+      
+      $$ = create_expression(result, REGISTER);
+
+      gen_bt_instruction(program, label, 0);
+
+      assignLabel(program, end);
+    }
 ;
 
 %%
