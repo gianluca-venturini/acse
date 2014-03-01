@@ -121,6 +121,8 @@ t_io_infos *file_infos;    /* input and output files used by the compiler */
 %token RETURN
 %token READ
 %token WRITE
+%token UNLESS
+%token <label> EVAL
 
 %token <label> DO
 %token <while_stmt> WHILE
@@ -250,7 +252,36 @@ control_statement : if_statement         { /* does nothing */ }
             | while_statement            { /* does nothing */ }
             | do_while_statement SEMI    { /* does nothing */ }
             | return_statement SEMI      { /* does nothing */ }
+            | eval_unless_statement SEMI { /* does nothing */ }
 ;
+
+eval_unless_statement : EVAL
+                      {  
+                        $1 = newLabel(program);               // B
+                        gen_bt_instruction(program, $1, 0);   // goto B
+                        $<label>$ = assignNewLabel(program);  // A:
+                      } 
+                      code_block
+                      {
+                        $<label>$ = newLabel(program);               // C     
+                        gen_bt_instruction(program, $<label>$, 0);   //goto C
+                        assignLabel(program, $1);                    // B:
+                      } 
+                      UNLESS exp
+                      {
+                        if($6.expression_type == IMMEDIATE)
+                        {
+                          int location = getNewRegister(program);
+                          gen_addi_instruction(program, location, REG_0, $6.value);
+                          gen_andb_instruction(program, location, location, location, CG_DIRECT_ALL);
+                        }
+                        else
+                        {
+                          gen_andb_instruction(program, $6.value, $6.value, $6.value, CG_DIRECT_ALL);
+                        }
+                        gen_beq_instruction(program, $<label>2, 0); //goto A
+                        assignLabel(program, $<label>4);            // C:
+                      }
 
 read_write_statement : read_statement  { /* does nothing */ }
                      | write_statement { /* does nothing */ }
