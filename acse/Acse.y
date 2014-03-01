@@ -114,13 +114,14 @@ t_io_infos *file_infos;    /* input and output files used by the compiler */
 %token LBRACE RBRACE LPAR RPAR LSQUARE RSQUARE
 %token SEMI COLON PLUS MINUS MUL_OP DIV_OP MOD_OP
 %token AND_OP OR_OP NOT_OP
-%token ASSIGN LT GT SHL_OP SHR_OP EQ NOTEQ LTEQ GTEQ
+%token LT GT SHL_OP SHR_OP EQ NOTEQ LTEQ GTEQ
 %token ANDAND OROR
 %token COMMA
 %token FOR
 %token RETURN
 %token READ
 %token WRITE
+%token ASSIGN
 
 %token <label> DO
 %token <while_stmt> WHILE
@@ -135,12 +136,14 @@ t_io_infos *file_infos;    /* input and output files used by the compiler */
 %type <list> declaration_list
 %type <label> if_stmt
 
+%type <expr> assign_statement;
+
 /*=========================================================================
                           OPERATOR PRECEDENCES
  =========================================================================*/
 
 %left COMMA
-%left ASSIGN
+%right ASSIGN
 %left OROR
 %left ANDAND
 %left OR_OP
@@ -271,6 +274,7 @@ assign_statement : IDENTIFIER LSQUARE exp RSQUARE ASSIGN exp
                 * because of the value associated with IDENTIFIER.
                 * The value of IDENTIFIER is a string created
                 * by a call to the function `strdup' (see Acse.lex) */
+                $$ = $6;
                free($1);
             }
             | IDENTIFIER ASSIGN exp
@@ -301,6 +305,7 @@ assign_statement : IDENTIFIER LSQUARE exp RSQUARE ASSIGN exp
                         (program, location, REG_0, $3.value, CG_DIRECT_ALL);
 
                /* free the memory associated with the IDENTIFIER */
+               $$ = $3;
                free($1);
             }
 ;
@@ -566,6 +571,7 @@ exp: NUMBER      { $$ = create_expression ($1, IMMEDIATE); }
                                  (program, exp_r0, $2, SUB);
                         }
                      }
+    | assign_statement { $$ = $1; }
 ;
 
 %%
