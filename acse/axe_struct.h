@@ -114,6 +114,13 @@ typedef struct t_while_statement
                                     * that follows the while construct */
 } t_while_statement;
 
+typedef struct label_node
+{
+  t_axe_label *label;
+  char *id;
+  int assigned;
+} label_node;
+
 /* create a label */
 extern t_axe_label * alloc_label(int value);
 

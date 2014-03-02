@@ -89,6 +89,10 @@ t_reg_allocator *RA;       /* Register allocator. It implements the "Linear scan
 
 t_io_infos *file_infos;    /* input and output files used by the compiler */
 
+t_list *labelList = NULL;
+
+label_node *findLabel(char *id);
+
 %}
 
 %expect 1
@@ -122,6 +126,9 @@ t_io_infos *file_infos;    /* input and output files used by the compiler */
 %token READ
 %token WRITE
 
+%token GOTO
+%token IN
+
 %token <label> DO
 %token <while_stmt> WHILE
 %token <label> IF
@@ -134,6 +141,7 @@ t_io_infos *file_infos;    /* input and output files used by the compiler */
 %type <decl> declaration
 %type <list> declaration_list
 %type <label> if_stmt
+%type <list> label_list
 
 /*=========================================================================
                           OPERATOR PRECEDENCES
@@ -246,10 +254,92 @@ statement   : assign_statement SEMI      { /* does nothing */ }
             | SEMI            { gen_nop_instruction(program); }
 ;
 
+label_statement : IDENTIFIER COLON
+                {
+                  /*
+                  if(get_symbol_location(program, $1, 0) != REG_INVALID)
+                  {
+                    printf("You can't assign the same name of a variable\n");
+                    exit(-1);
+                  }
+                  */
+                  label_node *label = findLabel($1);
+                  //label_node *label = NULL;
+                  if(label != NULL)
+                  {
+                    if(label->assigned == 0)
+                    {  
+                      assignLabel(program, label->label);
+                      label->assigned = 1;
+                    }
+                    else
+                    {
+                      printf("Error: you can't assign a label twice\n");
+                      exit(-1);
+                    }
+                  }
+                  else
+                  {
+                    printf("Add new label %s\n", $1);
+                    label_node *label = (label_node *) malloc(sizeof(label_node));
+                    label->label = assignNewLabel(program);
+                    label->id = strdup($1);
+                    label->assigned = 1;
+                    labelList = addElement(labelList, label, -1);
+                  }
+                }
+;
+
+goto_statement : GOTO exp IN label_list
+               {
+                
+                t_list *labelNode = $4;
+                t_axe_expression count = create_expression(gen_load_immediate(program, 1), REGISTER); 
+
+                while(labelNode != NULL)
+                {
+                  char *id = labelNode->data;
+                  printf("Cerco label %s\n", id);
+                  label_node *label = findLabel(id);
+                  if(label == NULL)
+                  {
+                    printf("Lo creo qua\n");
+                    label = (label_node *)malloc(sizeof(label_node));
+                    label->label = newLabel(program);
+                    label->assigned = 0;
+                    label->id = strdup(id);
+                    labelList = addElement(labelList, label, -1);
+                  }
+
+                  handle_binary_comparison(program, $2, count, _EQ_);
+                  gen_bne_instruction(program, label->label, 0);
+
+                  gen_addi_instruction(program, count.value, count.value, 1);
+                  labelNode = labelNode->next;
+                }
+               }
+;
+
+label_list : label_list COMMA IDENTIFIER
+           {
+            char *id = strdup($3);
+            printf("Add %s label to goto\n", $3);
+            $$ = addElement($1, id, -1);
+           }
+           | IDENTIFIER
+           {
+            char *id = strdup($1);
+            printf("Add %s label to goto\n", $1);
+            $$ = addElement(NULL, id, -1);
+           }
+;
+
 control_statement : if_statement         { /* does nothing */ }
             | while_statement            { /* does nothing */ }
             | do_while_statement SEMI    { /* does nothing */ }
             | return_statement SEMI      { /* does nothing */ }
+            | label_statement            { /* does nothing */ }
+            | goto_statement SEMI        { /* does nothing */ }
 ;
 
 read_write_statement : read_statement  { /* does nothing */ }
@@ -664,4 +754,21 @@ int yyerror(const char* errmsg)
    errorcode = AXE_SYNTAX_ERROR;
    
    return 0;
+}
+
+label_node *findLabel(char *id)
+{
+  printf("Ricerca %s in corso... ", id);
+  t_list *labelNode = labelList;
+  while(labelNode != NULL)
+  {
+    if(strcmp(((label_node *)labelNode->data)->id, id) == 0)
+    {
+      printf("trovato\n");
+      return labelNode->data;
+    }
+    labelNode = labelNode->next;
+  }
+  printf("non trovato\n");
+  return NULL;
 }
