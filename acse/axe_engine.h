@@ -50,7 +50,7 @@ extern t_axe_label * assignNewLabel(t_program_infos *program);
 
 /* add a variable to the program */
 extern void createVariable(t_program_infos *program
-      , char *ID, int type, int isArray, int arraySize, int init_val);
+      , char *ID, int type, int isArray, int isPointer, int arraySize, int init_val);
 
 /* get a previously allocated variable */
 extern t_axe_variable * getVariable

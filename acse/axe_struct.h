@@ -44,6 +44,7 @@ typedef struct t_axe_address
 typedef struct t_axe_variable
 {
    int type;      /* a valid data type @see `axe_constants.h' */
+   int isPointer;
    int isArray;   /* must be TRUE if the current variable is an array */
    int arraySize; /* the size of the array. This information is useful only
                    * if the field `isArray' is TRUE */
@@ -98,6 +99,7 @@ typedef struct t_axe_expression
 
 typedef struct t_axe_declaration
 {
+   int isPointer;
    int isArray;           /* must be TRUE if the current variable is an array */
    int arraySize;         /* the size of the array. This information is useful only
                            * if the field `isArray' is TRUE */
@@ -144,7 +146,7 @@ extern void free_variable (t_axe_variable *variable);
 
 /* create an instance of `t_axe_variable' */
 extern t_axe_declaration * alloc_declaration
-      (char *ID, int isArray, int arraySize, int init_val);
+      (char *ID, int isArray, int isPointer, int arraySize, int init_val);
 
 /* finalize an instruction info. */
 extern void free_Instruction(t_axe_instruction *inst);

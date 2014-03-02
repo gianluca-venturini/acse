@@ -76,7 +76,7 @@ void set_new_variables(t_program_infos *program
       }
 
       /* create and assign a new variable to program */
-      createVariable(program, current_decl->ID, varType, current_decl->isArray
+      createVariable(program, current_decl->ID, varType, current_decl->isArray, current_decl->isPointer
             , current_decl->arraySize, current_decl->init_val);
 
       /* update the value of `current_element' */

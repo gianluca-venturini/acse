@@ -201,7 +201,7 @@ declaration_list  : declaration_list COMMA declaration
 declaration : IDENTIFIER ASSIGN NUMBER
             {
                /* create a new instance of t_axe_declaration */
-               $$ = alloc_declaration($1, 0, 0, $3);
+               $$ = alloc_declaration($1, 0, 0, 0, $3);
 
                /* test if an `out of memory' occurred */
                if ($$ == NULL)
@@ -210,7 +210,7 @@ declaration : IDENTIFIER ASSIGN NUMBER
             | IDENTIFIER LSQUARE NUMBER RSQUARE
             {
                /* create a new instance of t_axe_declaration */
-               $$ = alloc_declaration($1, 1, $3, 0);
+               $$ = alloc_declaration($1, 1, 0, $3, 0);
 
                   /* test if an `out of memory' occurred */
                if ($$ == NULL)
@@ -219,7 +219,16 @@ declaration : IDENTIFIER ASSIGN NUMBER
             | IDENTIFIER
             {
                /* create a new instance of t_axe_declaration */
-               $$ = alloc_declaration($1, 0, 0, 0);
+               $$ = alloc_declaration($1, 0, 0, 0, 0);
+               
+               /* test if an `out of memory' occurred */
+               if ($$ == NULL)
+                  notifyError(AXE_OUT_OF_MEMORY);
+            }
+            | MUL_OP IDENTIFIER
+            {
+               /* create a new instance of t_axe_declaration */
+               $$ = alloc_declaration($2, 0, 1, 0, 0);
                
                /* test if an `out of memory' occurred */
                if ($$ == NULL)
@@ -566,6 +575,32 @@ exp: NUMBER      { $$ = create_expression ($1, IMMEDIATE); }
                                  (program, exp_r0, $2, SUB);
                         }
                      }
+   | AND_OP IDENTIFIER
+   {
+    if(getVariable(program, $2)->isPointer == 1) 
+    {
+      printf("Error: you can't take a pointer variable address (multiple pointers not supported\n");
+      exit(-1);
+    }
+    int reg = getNewRegister(program);
+    t_axe_label *label = getLabelFromVariableID(program, $2);
+    gen_mova_instruction(program, reg, label, 0);
+    $$ = create_expression(reg, REGISTER);
+   }
+   | MUL_OP IDENTIFIER
+   {
+    if(getVariable(program, $2)->isPointer == 0) 
+    {
+      printf("Error: you can't dereferentiate a non pointer variable\n");
+      exit(-1);
+    }
+    int destRegister = getNewRegister(program);
+    int srcRegister = get_symbol_location(program, $2, 0);
+    gen_add_instruction(program, destRegister, REG_0, srcRegister, CG_INDIRECT_SOURCE);
+    $$ = create_expression(destRegister, REGISTER);
+
+    free($2);
+   }
 ;
 
 %%

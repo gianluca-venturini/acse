@@ -116,7 +116,7 @@ t_axe_label * alloc_label(int value)
 }
 
 t_axe_declaration * alloc_declaration
-      (char *ID, int isArray, int arraySize, int init_val)
+      (char *ID, int isArray, int isPointer, int arraySize, int init_val)
 {
    t_axe_declaration *result;
 
@@ -133,6 +133,7 @@ t_axe_declaration * alloc_declaration
    result->arraySize = arraySize;
    result->ID = ID;
    result->init_val = init_val;
+   result->isPointer = isPointer;
 
    /* return the just created and initialized instance of t_axe_declaration */
    return result;

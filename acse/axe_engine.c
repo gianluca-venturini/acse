@@ -47,7 +47,7 @@ static void addVariable(t_program_infos *program, t_axe_variable *variable);
       
 /* create a new variable */
 void createVariable(t_program_infos *program, char *ID
-      , int type, int isArray, int arraySize, int init_val)
+      , int type, int isArray, int isPointer, int arraySize, int init_val)
 {
    t_axe_variable *var;
          
@@ -62,6 +62,8 @@ void createVariable(t_program_infos *program, char *ID
    
    /* assign a new label to the newly created variable `var' */
    var->labelID = newLabel(program);
+
+   var->isPointer = isPointer;
 
    /* add the new variable to program */
    addVariable(program, var);
