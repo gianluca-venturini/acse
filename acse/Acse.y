@@ -37,7 +37,6 @@
 #endif
 
 
-
 /* global variables */
 int line_num;        /* this variable will keep track of the
                       * source code line number. Every time that a newline
@@ -107,6 +106,7 @@ t_list *defineList = NULL;
    t_list *list;
    t_axe_label *label;
    t_while_statement while_stmt;
+   t_axe_question quest;
 } 
 /*=========================================================================
                                TOKENS 
@@ -126,6 +126,8 @@ t_list *defineList = NULL;
 
 %token DEFINE
 
+%token <quest>QUESTION
+
 %token <label> DO
 %token <while_stmt> WHILE
 %token <label> IF
@@ -143,8 +145,11 @@ t_list *defineList = NULL;
                           OPERATOR PRECEDENCES
  =========================================================================*/
 
+%right QUESTION COLON
+
 %left COMMA
 %left ASSIGN
+
 %left OROR
 %left ANDAND
 %left OR_OP
@@ -597,6 +602,55 @@ exp: NUMBER      { $$ = create_expression ($1, IMMEDIATE); }
                                  (program, exp_r0, $2, SUB);
                         }
                      }
+    | exp QUESTION 
+    {
+      $2.falseExp = newLabel(program);
+      $2.end = newLabel(program);
+      $2.resultRegister = getNewRegister(program);
+      if($1.expression_type == IMMEDIATE)
+      {
+        printf("Il valore e': %d", $1.value);
+        if($1.value == 0) 
+        {
+          gen_bt_instruction(program, $2.falseExp, 0);
+        }
+      }
+      else
+      {
+        gen_andb_instruction(program, $1.value, $1.value, $1.value, CG_DIRECT_ALL);
+        gen_beq_instruction(program, $2.falseExp, 0);
+      }
+    } 
+    exp COLON
+    {
+      if($4.expression_type == IMMEDIATE)
+      {
+        gen_addi_instruction(program, $2.resultRegister, REG_0, $4.value);
+      }
+      else
+      {
+        gen_addi_instruction(program, $2.resultRegister, $4.value, 0);
+      }
+      gen_bt_instruction(program, $2.end, 0);
+
+      assignLabel(program, $2.falseExp);
+    } 
+    exp
+    {
+      if($4.expression_type == IMMEDIATE)
+      {
+        gen_addi_instruction(program, $2.resultRegister, REG_0, $7.value);
+      }
+      else
+      {
+        gen_addi_instruction(program, $2.resultRegister, $7.value, 0);
+      }
+
+      assignLabel(program, $2.end);
+
+      $$ = create_expression($2.resultRegister, REGISTER);
+    } 
+
 ;
 
 %%
