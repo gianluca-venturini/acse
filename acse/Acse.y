@@ -89,6 +89,8 @@ t_reg_allocator *RA;       /* Register allocator. It implements the "Linear scan
 
 t_io_infos *file_infos;    /* input and output files used by the compiler */
 
+t_switch_statement activeSwitchStatement;
+
 %}
 
 %expect 1
@@ -105,6 +107,7 @@ t_io_infos *file_infos;    /* input and output files used by the compiler */
    t_list *list;
    t_axe_label *label;
    t_while_statement while_stmt;
+   t_switch_statement switch_stmt;
 } 
 /*=========================================================================
                                TOKENS 
@@ -122,6 +125,10 @@ t_io_infos *file_infos;    /* input and output files used by the compiler */
 %token READ
 %token WRITE
 
+%token CASE
+%token DEFAULT
+%token BREAK
+
 %token <label> DO
 %token <while_stmt> WHILE
 %token <label> IF
@@ -129,6 +136,7 @@ t_io_infos *file_infos;    /* input and output files used by the compiler */
 %token <intval> TYPE
 %token <svalue> IDENTIFIER
 %token <intval> NUMBER
+%token <switch_stmt> SWITCH
 
 %type <expr> exp
 %type <decl> declaration
@@ -250,6 +258,64 @@ control_statement : if_statement         { /* does nothing */ }
             | while_statement            { /* does nothing */ }
             | do_while_statement SEMI    { /* does nothing */ }
             | return_statement SEMI      { /* does nothing */ }
+            | switch_statement           { /* does nothing */ }
+            | break_statement SEMI       { /* does nothing */ }
+;
+
+switch_statement : SWITCH LPAR exp RPAR
+                 {
+                  $1.end = newLabel(program);
+                  $1.exp = $3;
+                  $1.active = 1;
+                  $<switch_stmt>$ = activeSwitchStatement;
+                  activeSwitchStatement = $1;
+                 } 
+                 LBRACE case_default_list RBRACE
+                 {
+                  assignLabel(program, $1.end);
+                  activeSwitchStatement = $<switch_stmt>5;
+                 }
+;
+
+case_default_list: case_list default
+                 | case_list
+;
+
+case_list : case_list case { /* does nothing */ }
+          | /*empty*/      { /* does nothing */ }
+;
+
+case : CASE
+     {
+       $<switch_stmt>$ = activeSwitchStatement;
+     } 
+     NUMBER COLON
+     {
+       $<label>$ = newLabel(program);
+       t_axe_expression exp = create_expression($3, IMMEDIATE);
+       handle_binary_comparison(program, exp, activeSwitchStatement.exp, _EQ_);
+       gen_beq_instruction(program, $<label>$, 0);
+     } 
+     statements
+     {
+       assignLabel(program, $<label>5);
+       activeSwitchStatement = $<switch_stmt>2;
+     }
+;
+
+default : DEFAULT COLON statements { /* does nothing */ }
+;
+
+break_statement : BREAK
+                {
+                  if(activeSwitchStatement.active == 0)
+                  {
+                    printf("Error: break must be nested in a switch statement\n");
+                    //printMessage("Error: break must be nested in a switch statement\n");
+                    exit(-1);
+                  }
+                  gen_bt_instruction(program, activeSwitchStatement.end, 0);
+                }
 ;
 
 read_write_statement : read_statement  { /* does nothing */ }
