@@ -105,6 +105,7 @@ t_io_infos *file_infos;    /* input and output files used by the compiler */
    t_list *list;
    t_axe_label *label;
    t_while_statement while_stmt;
+   t_for_statement for_stmt;
 } 
 /*=========================================================================
                                TOKENS 
@@ -129,6 +130,7 @@ t_io_infos *file_infos;    /* input and output files used by the compiler */
 %token <intval> TYPE
 %token <svalue> IDENTIFIER
 %token <intval> NUMBER
+%token <for_stmt> FOR
 
 %type <expr> exp
 %type <decl> declaration
@@ -250,7 +252,44 @@ control_statement : if_statement         { /* does nothing */ }
             | while_statement            { /* does nothing */ }
             | do_while_statement SEMI    { /* does nothing */ }
             | return_statement SEMI      { /* does nothing */ }
+            | for_statement              { /* does nothing */ }
 ;
+
+for_statement: FOR LPAR IDENTIFIER COLON IDENTIFIER RPAR
+             {
+               $1.index_exp = create_expression(gen_load_immediate(program, 0), REGISTER);
+               t_axe_variable *array = getVariable(program, $5);
+               t_axe_variable *iterator = getVariable(program, $3);
+               int iteratorRegister = get_symbol_location(program, $3, 0);
+
+               if(!array->isArray) 
+               {
+                 printf("Error: You must provide an array at this point: %s\n", $5);
+               }
+
+               if(iterator->isArray) 
+               {
+                 printf("Error: You must provide a variable, not an array at this point\n", $3);
+               }
+
+               t_axe_expression arraySize = create_expression(array->arraySize, IMMEDIATE);
+               $1.label_end = newLabel(program);
+               $1.label_condition = assignNewLabel(program);
+               handle_binary_comparison(program, $1.index_exp, arraySize, _LT_);
+               gen_beq_instruction(program, $1.label_end, 0);
+               int tmpRegister = loadArrayElement(program, $5, $1.index_exp);
+               gen_addi_instruction(program, iteratorRegister, tmpRegister, 0);
+             }
+             code_block
+             {
+               int iteratorRegister = get_symbol_location(program, $3, 0);
+               t_axe_expression data = create_expression(iteratorRegister, REGISTER);
+               storeArrayElement(program, $5, $1.index_exp, data);
+
+               gen_addi_instruction(program, $1.index_exp.value, $1.index_exp.value, 1);
+               gen_bt_instruction(program, $1.label_condition, 0);
+               assignLabel(program, $1.label_end);
+             }
 
 read_write_statement : read_statement  { /* does nothing */ }
                      | write_statement { /* does nothing */ }
